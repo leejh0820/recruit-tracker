@@ -1,0 +1,141 @@
+# Recruit Tracker
+
+LinkedIn, Remember, 원티드, 사람인 등 채용 공고 페이지에서 **자동으로 정보를 추출**하고 Google Sheets에 기록하는 Chrome 확장 프로그램.
+
+## 주요 기능
+
+- 공고 페이지에서 회사명 / 직무 / 위치 / 근무형태 / 연봉 / 직무설명 자동 추출
+- 지원 여부(TRUE/FALSE) 토글 관리
+- Chrome 로컬 스토리지 저장 + Google Sheets 자동 적재
+- CSV 복사로 스프레드시트 붙여넣기 지원
+- 같은 URL 재저장 시 업데이트(중복 없음)
+
+## 지원 사이트
+
+| 사이트 | 자동 추출 항목 |
+|---|---|
+| LinkedIn | 회사명, 위치, 근무형태, 연봉 |
+| Remember (career.rememberapp.co.kr) | 회사명, 위치, 근무형태, 연봉, 직무설명(네비/푸터 제거) |
+| 원티드 (wanted.co.kr) | 회사명, 위치, 연봉 |
+| 사람인 (saramin.co.kr) | 회사명, 위치, 연봉 |
+| 기타 사이트 | 직무명, URL, 본문 텍스트 |
+
+## 설치
+
+1. `chrome://extensions` 접속
+2. 우측 상단 **개발자 모드** ON
+3. **압축해제된 확장 프로그램을 로드** 클릭 → 이 폴더 선택
+4. 브라우저 우측 상단에서 **Recruit Tracker** 아이콘 고정(pin)
+
+## 사용 방법
+
+1. 채용 공고 상세 페이지 열기
+2. Recruit Tracker 아이콘 클릭
+3. **"현재 페이지 정보 가져오기"** 클릭 → 자동 추출
+4. 필요 시 직접 수정 → **"저장"**
+5. 저장된 이력에서 **지원완료/미지원** 토글
+6. **CSV 복사** → Google Sheets에 붙여넣기
+
+## Google Sheets 연동
+
+### 1. Apps Script 설정
+
+구글 시트에서 **확장 프로그램 → Apps Script** 열기 후 아래 코드 입력:
+
+```javascript
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const body = JSON.parse(e.postData.contents);
+
+  if (sheet.getLastRow() === 0) {
+    setupSheet();
+  }
+
+  const dateStr = (body.capturedAt || new Date().toISOString()).slice(0, 10);
+  const desc = body.description || "";
+
+  sheet.appendRow([
+    dateStr,
+    body.company || "",
+    body.title || "",
+    body.location || "",
+    body.workType || "",
+    body.salary || "",
+    body.applied ? "TRUE" : "FALSE",
+    body.url || "",
+    desc
+  ]);
+
+  return ContentService.createTextOutput("ok");
+}
+
+function setupSheet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.clearContents();
+  sheet.clearFormats();
+
+  const headers = ["날짜", "회사", "직무/포지션", "위치", "근무형태", "연봉/페이", "지원여부", "URL", "직무설명"];
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  headerRange.setBackground("#1e3a5f");
+  headerRange.setFontColor("#ffffff");
+  headerRange.setFontWeight("bold");
+  headerRange.setFontSize(11);
+  headerRange.setHorizontalAlignment("center");
+  headerRange.setVerticalAlignment("middle");
+  sheet.setRowHeight(1, 36);
+
+  sheet.setColumnWidth(1, 110);
+  sheet.setColumnWidth(2, 140);
+  sheet.setColumnWidth(3, 210);
+  sheet.setColumnWidth(4, 110);
+  sheet.setColumnWidth(5, 100);
+  sheet.setColumnWidth(6, 100);
+  sheet.setColumnWidth(7, 80);
+  sheet.setColumnWidth(8, 60);
+  sheet.setColumnWidth(9, 300);
+  sheet.setFrozenRows(1);
+
+  const appliedRange = sheet.getRange("G2:G1000");
+  sheet.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("TRUE").setBackground("#d1fae5").setFontColor("#065f46")
+      .setRanges([appliedRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("FALSE").setBackground("#fef3c7").setFontColor("#92400e")
+      .setRanges([appliedRange]).build()
+  ]);
+
+  sheet.getRange("A2:I1000").setWrap(false).setVerticalAlignment("middle");
+  sheet.setRowHeightsForced(2, 999, 26);
+  SpreadsheetApp.flush();
+}
+```
+
+### 2. 웹 앱 배포
+
+**배포 → 새 배포** → 유형: 웹 앱 → 액세스: 모든 사용자 → 배포 URL 복사
+
+### 3. URL 설정
+
+`background.js` 1번 줄 `GOOGLE_APPS_SCRIPT_WEBAPP_URL`에 복사한 URL 입력
+
+## Google Sheets 컬럼 구성
+
+```
+날짜 | 회사 | 직무/포지션 | 위치 | 근무형태 | 연봉/페이 | 지원여부 | URL | 직무설명
+```
+
+## 파일 구조
+
+```
+recruit-tracker/
+├── manifest.json       # Chrome 확장 설정 (Manifest V3)
+├── background.js       # Service Worker: 페이지 파싱 + 저장 + Sheets 전송
+├── popup.html          # 확장 팝업 UI
+├── popup.js            # 팝업 로직
+├── README.md
+└── updates/
+    ├── CHANGELOG.md    # 버전별 변경 이력
+    └── TODO.md         # 개선 예정 항목
+```

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Recruit Tracker",
+  "description": "현재 보고 있는 채용 공고 정보를 한 번에 추출하고 저장하는 확장 프로그램입니다.",
+  "version": "0.1.0",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_title": "현재 공고 저장",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
