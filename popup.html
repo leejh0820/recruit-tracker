@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Recruit Tracker</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        font-size: 13px;
+        margin: 0;
+        padding: 12px;
+        width: 480px;
+        background: #f7fafc;
+      }
+
+      h1 {
+        font-size: 16px;
+        margin: 0 0 8px;
+      }
+
+      h2 {
+        font-size: 13px;
+        margin: 16px 0 6px;
+      }
+
+      button {
+        cursor: pointer;
+        border-radius: 6px;
+        border: none;
+        padding: 6px 10px;
+        font-size: 12px;
+        background: #2563eb;
+        color: white;
+      }
+
+      button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      button.danger {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
+      .row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        font-size: 11px;
+        color: #4b5563;
+      }
+
+      input,
+      textarea,
+      select {
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+        padding: 4px 6px;
+        font-size: 12px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 60px;
+        max-height: 160px;
+      }
+
+      #status {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #4b5563;
+        min-height: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 6px;
+        font-size: 11px;
+      }
+
+      th,
+      td {
+        padding: 4px 6px;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        background: #e5e7eb;
+        font-weight: 600;
+      }
+
+      tr:hover td {
+        background: #f0f4ff;
+        cursor: pointer;
+      }
+
+      .applied-badge {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .applied-badge.yes {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .applied-badge.no {
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+
+      .actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+
+      .small {
+        font-size: 11px;
+        color: #6b7280;
+      }
+
+      .delete-btn {
+        padding: 2px 6px;
+        font-size: 10px;
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .delete-btn:hover {
+        background: #fecaca;
+      }
+
+      .toggle-btn {
+        padding: 2px 6px;
+        font-size: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .toggle-btn.applied {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .toggle-btn.not-applied {
+        background: #e5e7eb;
+        color: #374151;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Recruit Tracker</h1>
+
+    <div class="actions">
+      <button id="parseBtn">현재 페이지 정보 가져오기</button>
+      <button id="saveBtn" class="secondary" disabled>저장</button>
+      <button id="copyCsvBtn" class="secondary">CSV 복사</button>
+    </div>
+    <div id="status" class="small"></div>
+
+    <h2>현재 추출된 공고</h2>
+    <div class="row">
+      <label>
+        회사명
+        <input id="companyInput" placeholder="회사 이름" />
+      </label>
+      <label>
+        직무 / 포지션
+        <input id="titleInput" placeholder="직책 / 포지션" />
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        위치
+        <input id="locationInput" placeholder="서울, 경기도 성남시..." />
+      </label>
+      <label>
+        근무 형태
+        <input id="workTypeInput" placeholder="In-Person / Remote / Hybrid" />
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        연봉 / 페이
+        <input id="salaryInput" placeholder="5000만원, 협의, $120k..." />
+      </label>
+      <label>
+        지원 여부
+        <select id="appliedSelect">
+          <option value="false">미지원</option>
+          <option value="true">지원완료</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        URL
+        <input id="urlInput" readonly />
+      </label>
+    </div>
+    <label>
+      직무 설명
+      <textarea id="descriptionInput"></textarea>
+    </label>
+
+    <h2>저장된 지원 이력 (최근순)</h2>
+    <div class="small" style="margin-bottom:4px">클릭하면 불러오기 / 지원완료 토글 가능</div>
+    <table>
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>회사</th>
+          <th>직무</th>
+          <th>위치</th>
+          <th>지원</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="applicationsTbody"></tbody>
+    </table>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
