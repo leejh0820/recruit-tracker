@@ -56,6 +56,7 @@ function doPost(e) {
 
   sheet.appendRow([
     dateStr,
+    body.source || "",
     body.company || "",
     body.title || "",
     body.location || "",
@@ -74,7 +75,7 @@ function setupSheet() {
   sheet.clearContents();
   sheet.clearFormats();
 
-  const headers = ["날짜", "회사", "직무/포지션", "위치", "근무형태", "연봉/페이", "지원여부", "URL", "직무설명"];
+  const headers = ["날짜", "출처", "회사", "직무/포지션", "위치", "근무형태", "연봉/페이", "지원여부", "URL", "직무설명"];
   const headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setValues([headers]);
   headerRange.setBackground("#1e3a5f");
@@ -85,18 +86,19 @@ function setupSheet() {
   headerRange.setVerticalAlignment("middle");
   sheet.setRowHeight(1, 36);
 
-  sheet.setColumnWidth(1, 110);
-  sheet.setColumnWidth(2, 140);
-  sheet.setColumnWidth(3, 210);
-  sheet.setColumnWidth(4, 110);
-  sheet.setColumnWidth(5, 100);
-  sheet.setColumnWidth(6, 100);
-  sheet.setColumnWidth(7, 80);
-  sheet.setColumnWidth(8, 60);
-  sheet.setColumnWidth(9, 300);
+  sheet.setColumnWidth(1, 110);  // 날짜
+  sheet.setColumnWidth(2, 90);   // 출처
+  sheet.setColumnWidth(3, 140);  // 회사
+  sheet.setColumnWidth(4, 210);  // 직무/포지션
+  sheet.setColumnWidth(5, 110);  // 위치
+  sheet.setColumnWidth(6, 100);  // 근무형태
+  sheet.setColumnWidth(7, 100);  // 연봉/페이
+  sheet.setColumnWidth(8, 80);   // 지원여부
+  sheet.setColumnWidth(9, 60);   // URL
+  sheet.setColumnWidth(10, 300); // 직무설명
   sheet.setFrozenRows(1);
 
-  const appliedRange = sheet.getRange("G2:G1000");
+  const appliedRange = sheet.getRange("H2:H1000");
   sheet.setConditionalFormatRules([
     SpreadsheetApp.newConditionalFormatRule()
       .whenTextEqualTo("TRUE").setBackground("#d1fae5").setFontColor("#065f46")
@@ -106,7 +108,7 @@ function setupSheet() {
       .setRanges([appliedRange]).build()
   ]);
 
-  sheet.getRange("A2:I1000").setWrap(false).setVerticalAlignment("middle");
+  sheet.getRange("A2:J1000").setWrap(false).setVerticalAlignment("middle");
   sheet.setRowHeightsForced(2, 999, 26);
   SpreadsheetApp.flush();
 }
@@ -123,7 +125,7 @@ function setupSheet() {
 ## Google Sheets 컬럼 구성
 
 ```
-날짜 | 회사 | 직무/포지션 | 위치 | 근무형태 | 연봉/페이 | 지원여부 | URL | 직무설명
+날짜 | 출처 | 회사 | 직무/포지션 | 위치 | 근무형태 | 연봉/페이 | 지원여부 | URL | 직무설명
 ```
 
 ## 파일 구조

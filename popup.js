@@ -13,6 +13,7 @@ const locationInput = $("locationInput");
 const workTypeInput = $("workTypeInput");
 const salaryInput = $("salaryInput");
 const appliedSelect = $("appliedSelect");
+const sourceInput = $("sourceInput");
 const urlInput = $("urlInput");
 const descriptionInput = $("descriptionInput");
 const applicationsTbody = $("applicationsTbody");
@@ -42,6 +43,7 @@ function fillForm(app) {
   workTypeInput.value = app.workType || "";
   salaryInput.value = app.salary || "";
   appliedSelect.value = app.applied ? "true" : "false";
+  sourceInput.value = app.source || "";
   urlInput.value = app.url || "";
   descriptionInput.value = app.description || "";
   lastParsed = { ...app };
@@ -55,7 +57,7 @@ function renderApplications(applications) {
   if (!cachedApplications.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 6;
+    td.colSpan = 7;
     td.textContent = "아직 저장된 지원 이력이 없습니다.";
     td.style.color = "#9ca3af";
     tr.appendChild(td);
@@ -69,6 +71,10 @@ function renderApplications(applications) {
     const dateTd = document.createElement("td");
     dateTd.textContent = formatDate(app.capturedAt);
     dateTd.style.whiteSpace = "nowrap";
+
+    const sourceTd = document.createElement("td");
+    sourceTd.textContent = app.source || "";
+    sourceTd.style.whiteSpace = "nowrap";
 
     const companyTd = document.createElement("td");
     companyTd.textContent = app.company || "";
@@ -133,6 +139,7 @@ function renderApplications(applications) {
     });
 
     tr.appendChild(dateTd);
+    tr.appendChild(sourceTd);
     tr.appendChild(companyTd);
     tr.appendChild(titleTd);
     tr.appendChild(locationTd);
@@ -201,7 +208,7 @@ copyCsvBtn.addEventListener("click", async () => {
     return;
   }
 
-  const header = ["capturedAt", "company", "title", "location", "workType", "salary", "applied", "url", "description"];
+  const header = ["capturedAt", "source", "company", "title", "location", "workType", "salary", "applied", "url", "description"];
 
   const escape = (value) => {
     if (value == null) return "";

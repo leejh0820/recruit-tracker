@@ -187,9 +187,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               description = bodyText;
             }
 
+            let source = "";
+            if (hostname.includes("linkedin.com")) source = "LinkedIn";
+            else if (hostname.includes("rememberapp.co.kr")) source = "Remember";
+            else if (hostname.includes("wanted.co.kr")) source = "원티드";
+            else if (hostname.includes("jumpit.co.kr")) source = "점핏";
+            else if (hostname.includes("saramin.co.kr")) source = "사람인";
+            else source = hostname;
+
             return {
               url,
               hostname,
+              source,
               title: titleFromHeading,
               company,
               location: locationText,
