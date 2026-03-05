@@ -1,4 +1,4 @@
-const GOOGLE_APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz-aeOHHXj2hPHBMXhDCWuCtwxNZ7hQjY4WYMqXrETltMsh4p54sMvkOLttlE8Tnm61Bw/exec";
+const GOOGLE_APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw_6LYrAUNbR8Oaf1RPh_tJjup7Su0lK_8GmWTkAbPmrSNHyDSis73_MyqFvSItCvJmSw/exec";
 
 function sendToGoogleSheet(job) {
   if (!GOOGLE_APPS_SCRIPT_WEBAPP_URL) return;
