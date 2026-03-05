@@ -49,6 +49,8 @@ function doPost(e) {
 
   if (sheet.getLastRow() === 0) {
     setupSheet();
+  } else {
+    migrateSheetIfNeeded(sheet);
   }
 
   const dateStr = (body.capturedAt || new Date().toISOString()).slice(0, 10);
@@ -68,6 +70,26 @@ function doPost(e) {
   ]);
 
   return ContentService.createTextOutput("ok");
+}
+
+function migrateSheetIfNeeded(sheet) {
+  if (sheet.getRange(1, 2).getValue() === "출처") return;
+  sheet.insertColumnBefore(2);
+  const cell = sheet.getRange(1, 2);
+  cell.setValue("출처");
+  cell.setBackground("#1e3a5f").setFontColor("#ffffff").setFontWeight("bold")
+      .setFontSize(11).setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.setColumnWidth(2, 90);
+  const appliedRange = sheet.getRange("H2:H1000");
+  sheet.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("TRUE").setBackground("#d1fae5").setFontColor("#065f46")
+      .setRanges([appliedRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("FALSE").setBackground("#fef3c7").setFontColor("#92400e")
+      .setRanges([appliedRange]).build()
+  ]);
+  SpreadsheetApp.flush();
 }
 
 function setupSheet() {
