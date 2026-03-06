@@ -12,7 +12,7 @@ const titleInput = $("titleInput");
 const locationInput = $("locationInput");
 const workTypeInput = $("workTypeInput");
 const salaryInput = $("salaryInput");
-const appliedSelect = $("appliedSelect");
+const statusSelect = $("statusSelect");
 const sourceInput = $("sourceInput");
 const urlInput = $("urlInput");
 const descriptionInput = $("descriptionInput");
@@ -42,7 +42,7 @@ function fillForm(app) {
   locationInput.value = app.location || "";
   workTypeInput.value = app.workType || "";
   salaryInput.value = app.salary || "";
-  appliedSelect.value = app.applied ? "true" : "false";
+  statusSelect.value = app.status || (app.applied ? "지원 완료" : "관심");
   sourceInput.value = app.source || "";
   urlInput.value = app.url || "";
   descriptionInput.value = app.description || "";
@@ -97,22 +97,33 @@ function renderApplications(applications) {
     locationTd.style.textOverflow = "ellipsis";
     locationTd.style.whiteSpace = "nowrap";
 
-    // 지원 여부 토글 버튼
+    // 진행 상태 select
     const appliedTd = document.createElement("td");
-    const toggleBtn = document.createElement("button");
-    toggleBtn.className = "toggle-btn " + (app.applied ? "applied" : "not-applied");
-    toggleBtn.textContent = app.applied ? "지원완료" : "미지원";
-    toggleBtn.title = "클릭해서 지원 여부 변경";
-    toggleBtn.addEventListener("click", (e) => {
+    const statusSel = document.createElement("select");
+    statusSel.className = "status-select";
+    const statuses = ["관심", "지원 완료", "서류 통과", "1차 면접", "합격", "불합격"];
+    statuses.forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      statusSel.appendChild(opt);
+    });
+    const currentStatus = app.status || (app.applied ? "지원 완료" : "관심");
+    statusSel.value = currentStatus;
+    statusSel.dataset.status = currentStatus;
+    statusSel.addEventListener("change", (e) => {
       e.stopPropagation();
-      chrome.runtime.sendMessage({ type: "TOGGLE_APPLIED", id: app.id }, (res) => {
+      const newStatus = statusSel.value;
+      statusSel.dataset.status = newStatus;
+      chrome.runtime.sendMessage({ type: "SET_STATUS", id: app.id, status: newStatus }, (res) => {
         if (res && res.ok) {
           renderApplications(res.applications);
-          setStatus(`'${app.company || app.title}' 지원 여부를 변경했습니다.`);
+          setStatus(`'${app.company || app.title}' 상태를 '${newStatus}'(으)로 변경했습니다.`);
         }
       });
     });
-    appliedTd.appendChild(toggleBtn);
+    statusSel.addEventListener("click", (e) => e.stopPropagation());
+    appliedTd.appendChild(statusSel);
 
     // 삭제 버튼
     const actionTd = document.createElement("td");
@@ -187,7 +198,8 @@ saveBtn.addEventListener("click", () => {
     location: locationInput.value.trim(),
     workType: workTypeInput.value.trim(),
     salary: salaryInput.value.trim(),
-    applied: appliedSelect.value === "true",
+    status: statusSelect.value,
+    applied: ["지원 완료", "서류 통과", "1차 면접", "합격"].includes(statusSelect.value),
     url: urlInput.value.trim(),
     description: descriptionInput.value.trim()
   };
@@ -208,7 +220,7 @@ copyCsvBtn.addEventListener("click", async () => {
     return;
   }
 
-  const header = ["capturedAt", "source", "company", "title", "location", "workType", "salary", "applied", "url", "description"];
+  const header = ["capturedAt", "source", "company", "title", "location", "workType", "salary", "status", "applied", "url", "description"];
 
   const escape = (value) => {
     if (value == null) return "";

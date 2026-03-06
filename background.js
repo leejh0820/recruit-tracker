@@ -1,4 +1,4 @@
-const GOOGLE_APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw_6LYrAUNbR8Oaf1RPh_tJjup7Su0lK_8GmWTkAbPmrSNHyDSis73_MyqFvSItCvJmSw/exec";
+const GOOGLE_APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxNLeQriineV8q_s5SnkVlSSZwYnRcupwSmA-8K-qAthuIWL9T37UuyoKcDjnL3VmqJWw/exec";
 
 function sendToGoogleSheet(job) {
   if (!GOOGLE_APPS_SCRIPT_WEBAPP_URL) return;
@@ -236,7 +236,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         jobWithId = { ...applications[existingIndex], ...job };
         applications[existingIndex] = jobWithId;
       } else {
-        jobWithId = { id: Date.now(), ...job };
+        jobWithId = { id: Date.now(), status: "관심", ...job };
         applications.unshift(jobWithId);
       }
 
@@ -249,13 +249,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === "TOGGLE_APPLIED") {
-    const { id } = message;
+  if (message.type === "SET_STATUS") {
+    const { id, status } = message;
     chrome.storage.local.get({ applications: [] }, (res) => {
       const applications = Array.isArray(res.applications) ? res.applications : [];
       const idx = applications.findIndex((a) => a.id === id);
       if (idx >= 0) {
-        applications[idx].applied = !applications[idx].applied;
+        applications[idx].status = status;
+        applications[idx].applied = ["지원 완료", "서류 통과", "1차 면접", "합격"].includes(status);
       }
       chrome.storage.local.set({ applications }, () => {
         sendResponse({ ok: true, applications });
@@ -280,7 +281,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "GET_APPLICATIONS") {
     chrome.storage.local.get({ applications: [] }, (res) => {
-      const applications = Array.isArray(res.applications) ? res.applications : [];
+      const applications = (Array.isArray(res.applications) ? res.applications : []).map((app) => {
+        if (!app.status) {
+          app.status = app.applied ? "지원 완료" : "관심";
+        }
+        return app;
+      });
       sendResponse({ ok: true, applications });
     });
 
