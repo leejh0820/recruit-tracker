@@ -2,6 +2,23 @@
 
 ---
 
+## v0.3.0 — 2026-03-06
+
+### 추가
+- **진행 상태 6단계 시스템** — 관심 / 지원 완료 / 서류 통과 / 1차 면접 / 합격 / 불합격
+- 팝업 이력 테이블에 컬러 상태 드롭다운 (행마다 즉시 변경 가능)
+- 폼 "지원 여부" → "진행 상태" select로 교체
+- Google Sheets H열 "진행 상태" 컬럼 추가 (조건부 색상 적용)
+- 기존 데이터 자동 마이그레이션: `applied: true` → "지원 완료", `false` → "관심"
+- Apps Script `migrateStatusColumnIfNeeded()` 함수 추가 (기존 시트 일괄 업데이트)
+
+### 수정
+- background.js: `TOGGLE_APPLIED` → `SET_STATUS` 메시지 핸들러로 교체
+- CSV 헤더에 `status` 컬럼 추가
+- Apps Script URL 업데이트
+
+---
+
 ## v0.2.0 — 2026-03-03
 
 ### 추가

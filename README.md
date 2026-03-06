@@ -5,7 +5,7 @@ LinkedIn, Remember, 원티드, 사람인 등 채용 공고 페이지에서 **자
 ## 주요 기능
 
 - 공고 페이지에서 회사명 / 직무 / 위치 / 근무형태 / 연봉 / 직무설명 자동 추출
-- 지원 여부(TRUE/FALSE) 토글 관리
+- **진행 상태 6단계 관리** — 관심 / 지원 완료 / 서류 통과 / 1차 면접 / 합격 / 불합격
 - Chrome 로컬 스토리지 저장 + Google Sheets 자동 적재
 - CSV 복사로 스프레드시트 붙여넣기 지원
 - 같은 URL 재저장 시 업데이트(중복 없음)
@@ -33,7 +33,7 @@ LinkedIn, Remember, 원티드, 사람인 등 채용 공고 페이지에서 **자
 2. Recruit Tracker 아이콘 클릭
 3. **"현재 페이지 정보 가져오기"** 클릭 → 자동 추출
 4. 필요 시 직접 수정 → **"저장"**
-5. 저장된 이력에서 **지원완료/미지원** 토글
+5. 저장된 이력에서 **진행 상태** 드롭다운으로 상태 변경
 6. **CSV 복사** → Google Sheets에 붙여넣기
 
 ## Google Sheets 연동
@@ -46,16 +46,14 @@ LinkedIn, Remember, 원티드, 사람인 등 채용 공고 페이지에서 **자
 function doPost(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const body = JSON.parse(e.postData.contents);
-
   if (sheet.getLastRow() === 0) {
     setupSheet();
   } else {
     migrateSheetIfNeeded(sheet);
+    migrateStatusColumnIfNeeded(sheet);
   }
-
   const dateStr = (body.capturedAt || new Date().toISOString()).slice(0, 10);
   const desc = body.description || "";
-
   sheet.appendRow([
     dateStr,
     body.source || "",
@@ -64,15 +62,16 @@ function doPost(e) {
     body.location || "",
     body.workType || "",
     body.salary || "",
+    body.status || "관심",
     body.applied ? "TRUE" : "FALSE",
     body.url || "",
     desc
   ]);
-
   return ContentService.createTextOutput("ok");
 }
 
 function migrateSheetIfNeeded(sheet) {
+  if (!sheet) sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   if (sheet.getRange(1, 2).getValue() === "출처") return;
   sheet.insertColumnBefore(2);
   const cell = sheet.getRange(1, 2);
@@ -80,8 +79,48 @@ function migrateSheetIfNeeded(sheet) {
   cell.setBackground("#1e3a5f").setFontColor("#ffffff").setFontWeight("bold")
       .setFontSize(11).setHorizontalAlignment("center").setVerticalAlignment("middle");
   sheet.setColumnWidth(2, 90);
-  const appliedRange = sheet.getRange("H2:H1000");
+  SpreadsheetApp.flush();
+}
+
+function migrateStatusColumnIfNeeded(sheet) {
+  if (!sheet) sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (sheet.getRange(1, 8).getValue() === "진행 상태") return;
+  sheet.insertColumnBefore(8);
+  const cell = sheet.getRange(1, 8);
+  cell.setValue("진행 상태");
+  cell.setBackground("#1e3a5f").setFontColor("#ffffff").setFontWeight("bold")
+      .setFontSize(11).setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.setColumnWidth(8, 90);
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 8, lastRow - 1, 1).setValue("관심");
+  }
+  applyConditionalFormatting(sheet);
+  SpreadsheetApp.flush();
+}
+
+function applyConditionalFormatting(sheet) {
+  const statusRange = sheet.getRange("H2:H1000");
+  const appliedRange = sheet.getRange("I2:I1000");
   sheet.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("관심").setBackground("#f3f4f6").setFontColor("#374151")
+      .setRanges([statusRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("지원 완료").setBackground("#dbeafe").setFontColor("#1d4ed8")
+      .setRanges([statusRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("서류 통과").setBackground("#ede9fe").setFontColor("#6d28d9")
+      .setRanges([statusRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("1차 면접").setBackground("#fef3c7").setFontColor("#d97706")
+      .setRanges([statusRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("합격").setBackground("#d1fae5").setFontColor("#065f46")
+      .setRanges([statusRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo("불합격").setBackground("#fee2e2").setFontColor("#dc2626")
+      .setRanges([statusRange]).build(),
     SpreadsheetApp.newConditionalFormatRule()
       .whenTextEqualTo("TRUE").setBackground("#d1fae5").setFontColor("#065f46")
       .setRanges([appliedRange]).build(),
@@ -89,15 +128,13 @@ function migrateSheetIfNeeded(sheet) {
       .whenTextEqualTo("FALSE").setBackground("#fef3c7").setFontColor("#92400e")
       .setRanges([appliedRange]).build()
   ]);
-  SpreadsheetApp.flush();
 }
 
 function setupSheet() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   sheet.clearContents();
   sheet.clearFormats();
-
-  const headers = ["날짜", "출처", "회사", "직무/포지션", "위치", "근무형태", "연봉/페이", "지원여부", "URL", "직무설명"];
+  const headers = ["날짜", "출처", "회사", "직무/포지션", "위치", "근무형태", "연봉/페이", "진행 상태", "지원여부", "URL", "직무설명"];
   const headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setValues([headers]);
   headerRange.setBackground("#1e3a5f");
@@ -107,30 +144,20 @@ function setupSheet() {
   headerRange.setHorizontalAlignment("center");
   headerRange.setVerticalAlignment("middle");
   sheet.setRowHeight(1, 36);
-
-  sheet.setColumnWidth(1, 110);  // 날짜
-  sheet.setColumnWidth(2, 90);   // 출처
-  sheet.setColumnWidth(3, 140);  // 회사
-  sheet.setColumnWidth(4, 210);  // 직무/포지션
-  sheet.setColumnWidth(5, 110);  // 위치
-  sheet.setColumnWidth(6, 100);  // 근무형태
-  sheet.setColumnWidth(7, 100);  // 연봉/페이
-  sheet.setColumnWidth(8, 80);   // 지원여부
-  sheet.setColumnWidth(9, 60);   // URL
-  sheet.setColumnWidth(10, 300); // 직무설명
+  sheet.setColumnWidth(1, 110);
+  sheet.setColumnWidth(2, 90);
+  sheet.setColumnWidth(3, 140);
+  sheet.setColumnWidth(4, 210);
+  sheet.setColumnWidth(5, 110);
+  sheet.setColumnWidth(6, 100);
+  sheet.setColumnWidth(7, 100);
+  sheet.setColumnWidth(8, 90);
+  sheet.setColumnWidth(9, 80);
+  sheet.setColumnWidth(10, 60);
+  sheet.setColumnWidth(11, 300);
   sheet.setFrozenRows(1);
-
-  const appliedRange = sheet.getRange("H2:H1000");
-  sheet.setConditionalFormatRules([
-    SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo("TRUE").setBackground("#d1fae5").setFontColor("#065f46")
-      .setRanges([appliedRange]).build(),
-    SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo("FALSE").setBackground("#fef3c7").setFontColor("#92400e")
-      .setRanges([appliedRange]).build()
-  ]);
-
-  sheet.getRange("A2:J1000").setWrap(false).setVerticalAlignment("middle");
+  applyConditionalFormatting(sheet);
+  sheet.getRange("A2:K1000").setWrap(false).setVerticalAlignment("middle");
   sheet.setRowHeightsForced(2, 999, 26);
   SpreadsheetApp.flush();
 }
@@ -144,10 +171,15 @@ function setupSheet() {
 
 `background.js` 1번 줄 `GOOGLE_APPS_SCRIPT_WEBAPP_URL`에 복사한 URL 입력
 
+### 4. 기존 시트 마이그레이션 (진행 상태 컬럼 추가)
+
+이미 데이터가 있는 시트에 "진행 상태" 컬럼을 추가하려면:
+Apps Script 에디터에서 `migrateStatusColumnIfNeeded` 함수를 선택 후 **▶ 실행**
+
 ## Google Sheets 컬럼 구성
 
 ```
-날짜 | 출처 | 회사 | 직무/포지션 | 위치 | 근무형태 | 연봉/페이 | 지원여부 | URL | 직무설명
+날짜 | 출처 | 회사 | 직무/포지션 | 위치 | 근무형태 | 연봉/페이 | 진행 상태 | 지원여부 | URL | 직무설명
 ```
 
 ## 파일 구조
