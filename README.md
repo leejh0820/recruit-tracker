@@ -33,7 +33,7 @@ LinkedIn, Remember, 원티드, 사람인 등 채용 공고 페이지에서 **자
 2. Recruit Tracker 아이콘 클릭
 3. **"현재 페이지 정보 가져오기"** 클릭 → 자동 추출
 4. 필요 시 직접 수정 → **"저장"**
-5. 저장된 이력에서 **진행 상태** 드롭다운으로 상태 변경
+5. 저장된 이력에서 **진행 상태** 버튼으로 상태 변경
 6. **CSV 복사** → Google Sheets에 붙여넣기
 
 ## Google Sheets 연동
@@ -161,7 +161,34 @@ function setupSheet() {
   sheet.setRowHeightsForced(2, 999, 26);
   SpreadsheetApp.flush();
 }
+
+// --- 구글 시트 내 진행 상태 버튼 (사이드바) ---
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("Recruit Tracker")
+    .addItem("상태 변경 패널 열기", "openStatusSidebar")
+    .addToUi();
+}
+
+function openStatusSidebar() {
+  const html = HtmlService.createHtmlOutputFromFile("StatusSidebar")
+    .setTitle("진행 상태")
+    .setWidth(180);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+function setStatusFromSidebar(status) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const range = sheet.getActiveRange();
+  if (!range) throw new Error("변경할 행의 셀을 먼저 선택해주세요.");
+  const row = range.getRow();
+  if (row === 1) throw new Error("헤더 행은 수정할 수 없습니다.");
+  sheet.getRange(row, 8).setValue(status);  // H열 = 진행 상태
+  sheet.getRange(row, 9).setValue(["지원 완료", "서류 통과", "1차 면접", "합격"].includes(status) ? "TRUE" : "FALSE");
+}
 ```
+
+**HTML 파일 추가:** Apps Script에서 **파일 → 새로 만들기 → HTML** → 이름 `StatusSidebar` → [`google-sheets/StatusSidebar.html`](google-sheets/StatusSidebar.html) 내용 복사
 
 ### 2. 웹 앱 배포
 
@@ -175,6 +202,12 @@ function setupSheet() {
 
 이미 데이터가 있는 시트에 "진행 상태" 컬럼을 추가하려면:
 Apps Script 에디터에서 `migrateStatusColumnIfNeeded` 함수를 선택 후 **▶ 실행**
+
+### 5. 구글 시트에서 진행 상태 버튼 사용 (선택)
+
+위 Apps Script에 `onOpen`, `openStatusSidebar`, `setStatusFromSidebar`가 포함되어 있습니다.  
+**StatusSidebar.html**을 추가한 뒤 시트를 새로고침하면 **Recruit Tracker → 상태 변경 패널 열기** 메뉴가 나타납니다.  
+변경할 행의 셀을 선택한 뒤 사이드바 버튼을 클릭하면 됩니다.
 
 ## Google Sheets 컬럼 구성
 
@@ -191,6 +224,9 @@ recruit-tracker/
 ├── popup.html          # 확장 팝업 UI
 ├── popup.js            # 팝업 로직
 ├── README.md
+├── google-sheets/      # 구글 시트 사이드바 버튼 설정 (선택)
+│   ├── README.md
+│   └── StatusSidebar.html
 └── updates/
     ├── CHANGELOG.md    # 버전별 변경 이력
     └── TODO.md         # 개선 예정 항목
